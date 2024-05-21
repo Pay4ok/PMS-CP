@@ -1,0 +1,73 @@
+#include <TFT_eSPI.h> // Graphics and font library for ILI9341 driver chip
+#include <SPI.h>
+#include "Menu.h"
+
+TFT_eSPI tft = TFT_eSPI(320, 240);  // Invoke library
+
+
+#define BTN_PIN 22
+#define BTN_PIN_DOWN 5
+#define BTN_PIN_SEL 21
+#define TFT_DC 2
+#define TFT_CS 15
+
+typedef void (*func)();
+
+byte cur_item = 0;
+char* items[] = {"item1","item2","item2","item3"};
+
+byte max_items = sizeof(items)/sizeof(items[0]);
+//func items_func[max_items];
+
+void ScanWifi() {
+  
+}
+
+void renderMenu() {
+  tft.fillScreen(0x000000);
+  tft.setCursor(0,0);
+
+  tft.fillRect(0, (22)*(cur_item)+cur_item*2, 100, 21, tft.color565(12, 112, 12));
+
+  for (int i = 0; i < max_items; i++) {
+    if (i == cur_item) tft.setTextColor(0x000000);
+    else tft.setTextColor(0xffffff);
+    tft.println(items[i]);
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(BTN_PIN, INPUT_PULLUP);
+  pinMode(BTN_PIN_DOWN, INPUT_PULLUP);
+  pinMode(BTN_PIN_SEL, INPUT_PULLUP);
+  tft.begin();
+
+
+  tft.setRotation(2);
+
+  tft.setTextSize(3);
+
+  renderMenu();
+}
+
+void loop() {
+  if (digitalRead(BTN_PIN) == LOW) {
+    Serial.print(cur_item);
+    Serial.println(" up");
+
+    if (cur_item++ >= max_items-1) cur_item = 0;
+    renderMenu();
+  }
+  if (digitalRead(BTN_PIN_DOWN) == LOW) {
+    Serial.print(cur_item);
+    Serial.println(" down");
+    if (cur_item-- == 0) cur_item = max_items-1;
+    renderMenu();
+  }
+  if (digitalRead(BTN_PIN_SEL) == LOW) {
+    
+  }
+  
+  delay(100);
+}

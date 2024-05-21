@@ -1,0 +1,97 @@
+#include "TFT_eSPI_HEADERS.h"
+#include "Menu.h"
+#include "DynamicItem.h"
+#include "TriangleGraphicItem.h"
+
+TFT_eSPI tft = TFT_eSPI(320, 240); 
+
+#define BTN_PIN_DOWN 22
+#define BTN_PIN_UP 21
+#define BTN_PIN_SEL 27
+#define BTN_PIN_BACK 26
+TriangleGraphicItem* triangle;
+void setup() {
+  digitalWrite(TFT_CS, LOW);
+  Serial.begin(115200);
+  pinMode(BTN_PIN_UP, INPUT_PULLUP);
+  pinMode(BTN_PIN_DOWN, INPUT_PULLUP);
+  pinMode(BTN_PIN_SEL, INPUT_PULLUP);
+  pinMode(BTN_PIN_BACK, INPUT_PULLUP);
+
+  tft.begin();
+  tft.setRotation(3);
+
+
+  Menu* main_menu = new Menu("Main menu");
+  MenuItem* main_menu_i1 = new MenuItem("Test 1");
+  Menu* main_menu_i2 = new Menu("Goto menu 2");
+  MenuItem* main_menu_i3 = new MenuItem("Test 3");
+  MenuItem* main_menu_i4 = new MenuItem("Test 4");
+  main_menu->add_item(main_menu_i1);
+  main_menu->add_item(main_menu_i2);
+  main_menu->add_item(main_menu_i3);
+  main_menu->add_item(main_menu_i4);
+
+  Menu::curent_menu = main_menu;
+  
+  MenuItem* main_menu2_i1 = new MenuItem("Menu2 item1");
+  MenuItem* main_menu2_i2 = new MenuItem("Menu2 item2");
+  main_menu_i2->add_item(main_menu2_i1);  
+  main_menu_i2->add_item(main_menu2_i2);  
+  Menu::curent_menu->init_menu_render();
+  
+  triangle = new TriangleGraphicItem(50, 50, 20); // Центр треугольника (50, 50), размер 20
+  DynamicItem::add_item(triangle, 100); 
+  DynamicItem::HandlerStart();
+}
+
+void loop() {
+  if (digitalRead(BTN_PIN_DOWN) == LOW) {
+    Menu::curent_menu->cur_item++;
+    if (Menu::curent_menu->cur_item == Menu::curent_menu->items_v.size()) Menu::curent_menu->cur_item = 0;
+    tft.setTextColor(0xffffff);
+    tft.setCursor(0,17);
+    tft.setTextSize(3);
+    for (int i = 0; i < Menu::curent_menu->items_v.size(); i++) {
+      if (i == Menu::curent_menu->cur_item) {
+        if (i > 0) Menu::curent_menu->items_v[i-1]->erase();
+        else if (i == 0) Menu::curent_menu->items_v[Menu::curent_menu->items_v.size()-1]->erase();
+        tft.setCursor(Menu::curent_menu->items_v[i]->Position.x,Menu::curent_menu->items_v[i]->Position.y);
+        Menu::curent_menu->items_v[i]->render();
+        tft.setTextColor(0x765442);
+        tft.println(" <");
+        tft.setTextColor(0xffffff);
+      }
+    }
+    Serial.println("down_btn");
+  }
+  if (digitalRead(BTN_PIN_UP) == LOW) {
+    Menu::curent_menu->cur_item--;
+    if (Menu::curent_menu->cur_item < 0) Menu::curent_menu->cur_item = Menu::curent_menu->items_v.size()-1;
+    tft.setTextColor(0xffffff);
+    tft.setCursor(0,17);
+    tft.setTextSize(3);
+    for (int i = 0; i < Menu::curent_menu->items_v.size(); i++) {
+      if (i == Menu::curent_menu->cur_item) {
+        if (i < Menu::curent_menu->items_v.size()-1) Menu::curent_menu->items_v[i+1]->erase(); 
+        else if (i == Menu::curent_menu->items_v.size()-1) Menu::curent_menu->items_v[0]->erase();
+        tft.setCursor(Menu::curent_menu->items_v[i]->Position.x,Menu::curent_menu->items_v[i]->Position.y);
+        Menu::curent_menu->items_v[i]->render();
+        tft.setTextColor(0x765442);
+        tft.println(" <");
+        tft.setTextColor(0xffffff);
+      }
+    }
+    Serial.println("up_btn");
+  }
+  if (digitalRead(BTN_PIN_SEL) == LOW) {
+    if (Menu::curent_menu->items_v[Menu::curent_menu->cur_item]->GetItemType() == 1) ((Menu*)Menu::curent_menu->items_v[Menu::curent_menu->cur_item])->action();// menu type
+    Serial.print("sel_btn: ");
+    Serial.println(Menu::curent_menu->items_v[Menu::curent_menu->cur_item]->name);
+  }
+  if (digitalRead(BTN_PIN_BACK) == LOW) {
+    if (Menu::curent_menu->parent != nullptr) Menu::curent_menu->back_action();// menu type
+    Serial.println("back_btn");
+  }
+  delay(100);
+}
